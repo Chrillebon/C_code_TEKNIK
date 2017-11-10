@@ -1,5 +1,5 @@
 /* Name: main.c
- * Author: <not Steen Grøntved>
+ * Author: <os>
  * Copyright: <MINE!! Mine alone!>
  * License: <what licence>
  */
