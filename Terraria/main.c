@@ -1,5 +1,5 @@
 /* Name: main.c
- * Author: <os>
+ * Author: <Mig og dig>
  * Copyright: <MINE!! Mine alone!>
  * License: <what licence>
  */
