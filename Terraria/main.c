@@ -49,7 +49,7 @@ int main(void)
 
 		//-------------------------------------------
 		//Krystal:
-		
+
 		//-------------------------------------------
 		//displays der skifter og viser tal/bogstaver:
 		for(int i=0;i<4;i++)
@@ -58,6 +58,9 @@ int main(void)
 			PORTD = NUMBERS[choices[i]];
 			_delay_ms(1);
 		}
+		//--------------------------------------------
+		//Knapper og interface:
+		
 		//--------------------------------------------
 	}
 }
