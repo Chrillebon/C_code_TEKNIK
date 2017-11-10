@@ -14,7 +14,7 @@
 #                is connected.
 # FUSES ........ Parameters for avrdude to flash the fuses appropriately.
 
-DEVICE     = atmega16a
+DEVICE     = atmega8
 CLOCK      = 8000000
 PROGRAMMER = -c usbasp -P /dev/ttys000
 OBJECTS    = main.o
@@ -60,7 +60,7 @@ FUSES      = -U lfuse:w:0xe4:m -U hfuse:w:0xd9:m
 # Tune the lines below only if you know what you are doing:
 
 AVRDUDE = avrdude $(PROGRAMMER) -p $(DEVICE)
-COMPILE = avr-gcc -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
+COMPILE = avr-gcc -Wall -Os -std=c99 -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
 
 # symbolic targets:
 all:	main.hex
