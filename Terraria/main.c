@@ -10,9 +10,9 @@
 #include "displays.h"
 
 void initialize(){
-	DDRD = 0xFF; //alle GPIO på port D sat til outputs, dette er vores output tal
-	DDRC = 0b00010000; // PC5+Pc4 sat til input
-	DDRB = 0x0F;
+	DDRC = 0xFF; //alle GPIO på port D sat til outputs, dette er vores output tal
+	DDRD = 0b00010000; // PC5+Pc4 sat til input
+	DDRB = 0x00;
 }
 
 volatile int choices[4] = {zero,two,three,four};
@@ -22,15 +22,36 @@ eksempel på hvordan dette ændres:
 choices[0] = A;
 */
 
+/*
+genstande der skal integreres:
+
+Humidity sensor (B1)
+Mist maker (B0)
+Blæser (2x) (B2, B3)
+Krystal (B6, B7)
+
+*/
+
 int main(void)
 {
 	initialize();
 
 	while(1)
 	{ //for eeeeeevigt!!
+		//-------------------------------------------
+		//humidity sensor:
 
 		//-------------------------------------------
-		//displays der skifter og viser tal/bogstaver
+		//Mist maker:
+
+		//-------------------------------------------
+		//Blæsere:
+
+		//-------------------------------------------
+		//Krystal:
+		
+		//-------------------------------------------
+		//displays der skifter og viser tal/bogstaver:
 		for(int i=0;i<4;i++)
 		{
 			DDRC = displays[i];
