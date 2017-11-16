@@ -48,7 +48,6 @@ void rensinput()
 //Oversættelse fra hvad man skal læse til hvad der står på displayet
 void display(int t)
 {
-	int v = 0;
 	//løkker der går gennem de fire cifre på displayet
 	for(int i = 0; i < 3; i++)
 	{
@@ -64,7 +63,7 @@ int main(void)
 
 	volatile int Global_Time=0;
 	volatile int Global_Time_Keeper = 0;
-	volatile int Time_Days = 0;
+	volatile long Time_Days = 0;
 	volatile int n=1;
 	volatile int t = 0;
 	volatile int Time = 0;
@@ -103,7 +102,7 @@ int main(void)
 		//-------------------------------------------
 		//displays der skifter og viser tal/bogstaver:
 
-		for(int i=0;i<2;i++)
+		for(int i=0;i<3;i++)
 		{
 			display(t);
 			DDRC = DISPLAYS[i];
@@ -139,7 +138,7 @@ int main(void)
 
 		//Hvad alle knapper gør (0-7):
 
-		if(PINA == 0b00000001 && Status_Status != 1)
+		if(PINA == 0b00000001)
 		{
 			//Lys
 			Status_Light = 1;
@@ -147,7 +146,7 @@ int main(void)
 			Status_Air = 0;
 			Time = 0;
 		}
-		if(PINA == 0b00000010 && Status_Status != 1)
+		if(PINA == 0b00000010)
 		{
 			//Fugt
 			Status_Humid = 1;
@@ -155,7 +154,7 @@ int main(void)
 			Status_Light = 0;
 			Time = 0;
 		}
-		if(PINA == 0b00000100 && Status_Status != 1)
+		if(PINA == 0b00000100)
 		{
 			//Luft
 			Status_Air = 1;
@@ -182,10 +181,17 @@ int main(void)
 		if(PINA == 0b00010000)
 		{
 			//Reset
+			if(Status_Status == 2)
+			{
+				Time_Days = 0;
+			}
 			Status_Status = 0;
 			Status_Air = 0;
 			Status_Humid = 0;
 			Status_Light = 0;
+			Global_Time=0;
+			Global_Time_Keeper = 0;
+			t = 0;
 			Time = 0;
 			//sætter alle størrelser til standard:
 			Size_Status = 0;
@@ -218,6 +224,10 @@ int main(void)
 		{
 			//Indstillinger
 			Status_Setting = 1;
+			Status_Status = 0;
+			Status_Air = 0;
+			Status_Humid = 0;
+			Status_Light = 0;
 			Time = 0;
 		}
 		if(PINA == 0b10000000)
@@ -317,13 +327,6 @@ int main(void)
 			Size_Light = 24;
 		}
 
-		//dage tæller op:
-		if(Time_Days >= 1000*60*24)
-		{
-			Size_Status++;
-			Time_Days = 0;
-		}
-
 		//Hvis det er tid til at høste:
 
 		if(8*7-Size_Status <= 0)
@@ -347,10 +350,20 @@ int main(void)
 				Status_Status = 0;
 				memset(SoonToBe,0x00,strlen(SoonToBe));
 			}
+			Global_Time=0;
+			Global_Time_Keeper = 0;
+			t = 0;
 			Status_Air = 0;
 			Status_Humid = 0;
 			Status_Light = 0;
 			Time = 0;
+		}
+
+		//dage tæller op:
+		if(Time_Days >= 1000*60*60*24)
+		{
+			Size_Status++;
+			Time_Days = 0;
 		}
 
 		//counter der holder styr på hvor langt bogstaverne i den tekst man skal skrive er kommet
