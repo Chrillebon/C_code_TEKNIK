@@ -83,6 +83,8 @@ volatile int DISPLAYS[4] = {DISPLAY_FIRST, DISPLAY_SECOND, DISPLAY_THIRD, DISPLA
 
 //Til personlig brug i vores kode:
 volatile char SoonToBe[80];
+//Sætter alle i SoonToBe til at være ingenting i displayet.
+memset(SoonToBe,0x00,strlen(SoonToBe));
 volatile int choices[4] = {NUMBERS[0],NUMBERS[0],NUMBERS[0],NUMBERS[0]};
 /*
 eksempel på hvordan dette ændres:
