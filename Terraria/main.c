@@ -10,9 +10,12 @@
 
 void initialize(){
 	DDRD = 0xFF; //alle GPIO på port D sat til outputs, dette er vores output tal
-	DDRC = 0b00010000; // PC5+Pc4 sat til input
-	DDRB = 0x00;
+	//DDRC = 0b00010000; // PC5+Pc4 sat til input
+	DDRB = 0x01; //alle slukkede på nær mist maker
 	DDRA = 0x00; //alle knapperne
+	//Setup til at måle fugtigheden:
+	ADMUX = (1<<REFS0);
+	ADCSRB = (1<<ADEN)|(1<<ADPS2)|(1<<ASPS1)|(1<<ASPS0);
 }
 
 /*
@@ -25,6 +28,19 @@ Krystal (B6, B7)
 Knappper (8 stk. A0-7) - lys, fugt, luft, status, reset, op, indst., ned
 
 */
+
+uint16_t adc_read(uint8_t INPUT)
+{
+	//dette skal være port A, da kun disse har analog til digital input...
+	INPUT = 0b00000111;
+	ADMUX = (ADMUX & 0xf8) | INPUT);
+
+	ADCSRA |= (1<<ADSC);
+
+	while(ADCSRA & (1<<ADSC));
+
+	return ADC;
+}
 
 //Sørger for, at ingen værdier kan være uden for "range"
 void range()
@@ -90,10 +106,10 @@ int main(void)
 {
 	initialize();
 
-	volatile int Global_Time=0;
+	volatile int Global_Time = 0;
 	volatile int Global_Time_Keeper = 0;
 	volatile long Time_Days = 0;
-	volatile int n=1;
+	volatile int n = 1;
 	volatile int t = 0;
 	volatile int Time = 0;
 
@@ -111,16 +127,67 @@ int main(void)
 	//Timer 0-24
 	volatile int Size_Humid = 50;
 	//Procent 0-100 - hvad vi vil have at fugtigheden er
-	volatile int Size_Humid_Sensor = 0;
+	volatile float Size_Humid_Sensor = 0;
 	//Procent 0-100 - hvad vi måler at luftfugtigheden skal være
 	volatile int Size_Air = 0;
 	//Størrelse fra 0-10
+	volatile int Fogger_On = 0;
 
 
 	while(1)
 	{
 		//-------------------------------------------
+		//displays der skifter og viser tal/bogstaver:
+		//Hvis der ikke skal skrives noget kan foggeren virke...
+		if(SoonToBe[0] == 0x00)
+		{
+			if(Fogger_On)
+			{
+				//Foggerport = 1
+				PORTB = 0x01;
+				//Den skal være tændt i 1/114000 del af et sekund
+				//Virker på hastigheden af processoren
+				//ca. 1000*1141/113000
+				// et sekund * ca. hastighed 1 ms/ønskede interval
+				for (int i = 0; i<10,i++){}
+				//Slukker igen
+				PORTB = 0x00;
+				for (int i = 0; i<10,i++){}
+			}
+		}
+		//Hvis der skal skrives noget:
+		else
+		{
+			display(t);
+			for(int i=0;i<3;i++)
+			{
+				DDRC = DISPLAYS[i];
+				PORTD = choices[i];
+				//Timere der tæller opad
+				Time++;
+				Global_Time++;
+				Time_Days++;
+				_delay_ms(1);
+			}
+		}
+
+		//-------------------------------------------
 		//humidity sensor:
+
+		//INDSÆT KODE DER MÅLER PROCENT LUFTFUGTIGHED HER:
+
+		Size_Humid_Sensor = (adc_read(1)/1024*85)+10;
+
+		//
+		//Hvis den er mere end 5 %-point fra den ønskede værdi:
+		if(Size_Humid_Sensor < Size_Humid - 5)
+		{
+			Fogger_On = 1;
+		}
+		else
+		{
+			Fogger_On = 0;
+		}
 
 		//-------------------------------------------
 		//Mist maker:
@@ -128,24 +195,19 @@ int main(void)
 		//-------------------------------------------
 		//Blæsere:
 
+		//Min / Max
+		if(Size_Air)
+		{
+			PORTB = 0b00001100
+		}
+
+		//Tænd blæsere på Size_Air ud af 10
+
 		//-------------------------------------------
 		//Krystal:
 
-		//-------------------------------------------
-		//displays der skifter og viser tal/bogstaver:
-
-		for(int i=0;i<3;i++)
-		{
-			display(t);
-			DDRC = DISPLAYS[i];
-			PORTD = choices[i];
-			//Timere der tæller opad
-			Time++;
-			Global_Time++;
-			Time_Days++;
-			_delay_ms(1);
-		}
 		//--------------------------------------------
+
 		//Knapper og interface:
 
 		//Hvad alle knapper gør (0-7):
@@ -182,7 +244,7 @@ int main(void)
 			{
 				Size_Status = 0;
 				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = "HOEST FAERDIG - HOEST IGEN OM 8 UGER";
+				SoonToBe = "HOEST FAERDIG - HOEST IGEN OM "<<NUMBERS[8]<<" UGER";
 				rensinput();
 			}
 			//alle andre gange:
