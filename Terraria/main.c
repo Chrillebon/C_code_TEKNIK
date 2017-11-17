@@ -369,18 +369,27 @@ int main(void)
 				Status_Air = 2;
 				Status_Humid = 0;
 				Status_Light = 0;
+				memset(SoonToBe,0x00,strlen(SoonToBe));
+				SoonToBe = "BRUG OP OG NED TIL AT JUSTERE LUFT";
+				rensinput();
 			}
 			if(Status_Humid)
 			{
 				Status_Humid = 2;
 				Status_Air = 0;
 				Status_Light = 0;
+				memset(SoonToBe,0x00,strlen(SoonToBe));
+				SoonToBe = "BRUG OP OG NED TIL AT JUSTERE FUGT";
+				rensinput();
 			}
 			if(Status_Light)
 			{
 				Status_Light = 2;
 				Status_Air = 0;
 				Status_Humid = 0;
+				memset(SoonToBe,0x00,strlen(SoonToBe));
+				SoonToBe = "BRUG OP OG NED TIL AT JUSTERE LYS";
+				rensinput();
 			}
 			Time = 0;
 		}
