@@ -59,6 +59,11 @@ volatile int NUMBERS[10] = {
 		0b01100111
 };
 
+volatile int SIGN[2] = {
+		0b10000000,
+		0b01000000
+}
+
 volatile int ALPHABET[26] = {
 	  A, B, C, D, E, F, G, H, I, J, K, L, M,
 		N, O, P, Q, R, S, T, U, V, W, X, Y, Z
@@ -75,3 +80,13 @@ volatile int ALPHABET[26] = {
 #define DISPLAY_FOURTH 0b00000111
 
 volatile int DISPLAYS[4] = {DISPLAY_FIRST, DISPLAY_SECOND, DISPLAY_THIRD, DISPLAY_FOURTH};
+
+//Til personlig brug i vores kode:
+volatile char SoonToBe[80];
+//Sætter alle i SoonToBe til at være ingenting i displayet.
+memset(SoonToBe,0x00,strlen(SoonToBe));
+volatile int choices[4] = {NUMBERS[0],NUMBERS[0],NUMBERS[0],NUMBERS[0]};
+/*
+eksempel på hvordan dette ændres:
+choices[0] = A;
+*/
