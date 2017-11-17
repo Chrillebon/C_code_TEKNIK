@@ -14,7 +14,7 @@
 #                is connected.
 # FUSES ........ Parameters for avrdude to flash the fuses appropriately.
 
-DEVICE     = atmega8
+DEVICE     = atmega16a
 CLOCK      = 8000000
 PROGRAMMER = -c usbasp -P /dev/ttys000
 OBJECTS    = main.o
