@@ -12,7 +12,7 @@ void initialize(){
 	DDRD = 0xFF; //alle GPIO på port D sat til outputs, dette er vores output tal
 	//DDRC = 0b00010000; // PC5+Pc4 sat til input
 	DDRB = 0x01; //alle slukkede på nær mist maker
-	DDRA = 0x00; //alle knapperne
+	//DDRA = 0x00; //alle knapperne
 	//Setup til at måle fugtigheden:
 	ADMUX = (1<<REFS0);
 	ADCSRB = (1<<ADEN)|(1<<ADPS2)|(1<<ASPS1)|(1<<ASPS0);
@@ -21,11 +21,14 @@ void initialize(){
 /*
 genstande der skal integreres:
 
-Humidity sensor (B1)
 Mist maker (B0)
+Humidity sensor (B1)
 Blæser (2x) (B2, B3)
+2x knapper (B4,B5) lys, fugt
 Krystal (B6, B7)
-Knappper (8 stk. A0-7) - lys, fugt, luft, status, reset, op, indst., ned
+A0: humid sensor.
+A1: Blæsere.
+A2-A7: 6x Knapper (luft, status, reset, op, indst., ned)
 
 */
 
@@ -152,7 +155,9 @@ int main(void)
 				for (int i = 0; i<10,i++){}
 				//Slukker igen
 				PORTB = 0x00;
-				for (int i = 0; i<10,i++){}
+				//behøver måske ikke sidste if statement når at der er så mange
+				//if statements længere nede i koden...?
+				//for (int i = 0; i<10,i++){}
 			}
 		}
 		//Hvis der skal skrives noget:
@@ -176,7 +181,7 @@ int main(void)
 
 		//INDSÆT KODE DER MÅLER PROCENT LUFTFUGTIGHED HER:
 
-		Size_Humid_Sensor = (adc_read(1)/1024*85)+10;
+		Size_Humid_Sensor = (adc_read(1)*85/1024)+10;
 
 		//
 		//Hvis den er mere end 5 %-point fra den ønskede værdi:
@@ -196,9 +201,11 @@ int main(void)
 		//Blæsere:
 
 		//Min / Max
+		//hvis den ikke er sat til 0:
 		if(Size_Air)
 		{
-			PORTB = 0b00001100
+			//tænd for blæserne:
+			PORTB = 0b00001100;
 		}
 
 		//Tænd blæsere på Size_Air ud af 10
@@ -210,9 +217,16 @@ int main(void)
 
 		//Knapper og interface:
 
+		if(Status_Status or Status_Setting or Status_Air or Status_Humid or Status_Light or Status_Reset)
+		{
+			//Hvis der er blevet trykket på noget laver vi et lille delay, så at metal der hopper ikke er et problem:
+			_delay_ms(50);
+			//Så kan den ikke fange det to gange.
+		}
+
 		//Hvad alle knapper gør (0-7):
 
-		if(PINA == 0b00000001)
+		if(PINB & (1<<PINB0))==0)//PIND == 0b00000001)
 		{
 			//Lys
 			Status_Light = 1;
@@ -220,7 +234,7 @@ int main(void)
 			Status_Air = 0;
 			Time = 0;
 		}
-		if(PINA == 0b00000010)
+		if(PINB & (1<<PINB1))==0)//PIND == 0b00000010)
 		{
 			//Fugt
 			Status_Humid = 1;
@@ -228,7 +242,7 @@ int main(void)
 			Status_Light = 0;
 			Time = 0;
 		}
-		if(PINA == 0b00000100)
+		if(PINA & (1<<PINA2))==0)//PIND == 0b00000100)
 		{
 			//Luft
 			Status_Air = 1;
@@ -236,7 +250,7 @@ int main(void)
 			Status_Light = 0;
 			Time = 0;
 		}
-		if(PINA == 0b00001000)
+		if(PINA & (1<<PINA3))==0)//PIND == 0b00001000)
 		{
 			//Status
 			//Denne aktiverer kun, hvis det er tid til at høste
@@ -265,7 +279,7 @@ int main(void)
 			//forsinker i 1/3 af et sekund, så man forhåbentligt ved hvad man laver/har fået en advarsel
 			_delay_ms(333);
 		}
-		if(PINA == 0b00010000)
+		if(PINA & (1<<PINA4))==0)//PIND == 0b00010000)
 		{
 			//Reset
 			if(Status_Status == 1 && Status_Reset == 0)
@@ -322,7 +336,7 @@ int main(void)
 			}
 			Time = 0;
 		}
-		if(PINA == 0b00100000)
+		if(PINA & (1<<PINA5))==0)//PIND == 0b00100000)
 		{
 			//Op
 			if(Status_Air == 2)
@@ -360,7 +374,7 @@ int main(void)
 			}
 			Time = 0;
 		}
-		if(PINA == 0b01000000)
+		if(PINA & (1<<PINA6))==0)//PIND == 0b01000000)
 		{
 			//Indstillinger
 			//registrerer at man trykker
@@ -374,7 +388,7 @@ int main(void)
 			SoonToBe = "HVAD VIL DU JUSTERE";
 			rensinput();
 		}
-		if(PINA == 0b10000000)
+		if(PINA & (1<<PINA7))==0)//PIND == 0b10000000)
 		{
 			//Ned
 			if(Status_Air == 2)
