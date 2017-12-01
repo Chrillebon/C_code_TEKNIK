@@ -10,7 +10,7 @@
 
 void initialize(){
 	DDRD = 0xFF; //alle GPIO på port D sat til outputs, dette er vores output tal
-	//DDRC = 0b00010000; // PC5+Pc4 sat til input
+	DDRC = 0xFF; //alle C porte sat til 1, så at jeg kan styre 4*7 segment med lav vs høj
 	DDRB = 0x01; //alle slukkede på nær mist maker
 	//DDRA = 0x00; //alle knapperne
 	//Setup til at måle fugtigheden:
@@ -77,7 +77,7 @@ void range()
 // renser input, så vi kan bruge det
 void rensinput()
 {
-	for(int i = 0; i < strlen(SoonToBe); i++)
+	for(int i = 0; i < globsize; i++)
 	{
 		//mellemrum bliver oversat
 		if(SoonToBe[i] == ' ')
@@ -93,15 +93,75 @@ void rensinput()
 	}
 }
 
+//Bruges i næste funktion
+//Oversætter char "værdi" til tal/bogstav vi kan bruge
+//eller som "displays.h" forstår
+//kig under ascii table, hvis det ikke ellers giver mening.
+
+int givemechar(char tegn)
+{
+	if(tegn<65)
+	{
+		return NUMBERS[tegn-48];
+	}
+	return ALPHABET[tegn-65];
+}
+
 //Oversættelse fra hvad man skal læse til hvad der står på displayet
+
 void display(int t)
 {
 	//løkker der går gennem de fire cifre på displayet
-	for(int i = 0; i < 3; i++)
+	for(int i = 0; i < 4; i++)
 	{
 		//sætter dette ciffer til at være hvad der står i variablen
 		//Så at det ser ud somom at det bevæger sig.
-		choices[i] = SoonToBe[t+i];
+		//her lokal variabel, fordi, den er åndsvag - vi brugte 2 timer på at finde det...
+		char local = SoonToBe[t+i];
+		//Når vi er løbet tør for hvad vi vil skrive, skal der være en overgang.
+		if(t+i > globsize+3)
+		{
+			//Tager tegnet i starten, når den er færdig i slutningen:
+			char local = SoonToBe[t-globsize+i-4];
+			//værdi "local" bliver til index som i "displays.h" og givemechar() bliver til værdi vi kan bruge.
+			choices[i] = givemechar(local);
+
+		}
+		//Her skal der ikke komme støj i overgangen:
+		else if(local <= 47 || local >= 100)
+		{
+			choices[i] = 0b00000000;
+		}
+		//Dette er hvad der sker normalt:
+		else
+		{
+			char local = SoonToBe[t+i];
+			//værdi "local" bliver til index som i "displays.h" og givemechar() bliver til værdi vi kan bruge.
+			choices[i] = givemechar(local);
+		}
+	}
+}
+
+//Finder størrelsen af vores array og gemmer det i globsize (længere nede)
+
+int size(char Input[])
+{
+	int size=0;
+	//Kør arrayet igennem
+	for(int i=0;i<100;i++)
+	{
+		char tegn = Input[i];
+		//Hvis tegnet ikke er NULL:
+		if(tegn>0)
+		{
+			//læg en til størrelsen
+			size++;
+		}
+		else
+		{
+			//Hvis den støder ind i NULL:
+			return size;
+		}
 	}
 }
 
@@ -164,13 +224,15 @@ int main(void)
 		else
 		{
 			display(t);
-			for(int i=0;i<3;i++)
+			for(int i=0;i<4;i++)
 			{
+				//oplys de rigtige ting på de rigtige displays
 				DDRC = DISPLAYS[i];
 				PORTD = choices[i];
 				//Timere der tæller opad
 				Time++;
 				Global_Time++;
+				Global_Time_Keeper++;
 				Time_Days++;
 				_delay_ms(1);
 			}
@@ -257,8 +319,9 @@ int main(void)
 			if(Status_Status == 2)
 			{
 				Size_Status = 0;
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = "HOEST FAERDIG - HOEST IGEN OM "<<NUMBERS[8]<<" UGER";
+				char SoonSoonToBe[] = "HOEST FAERDIG - HOEST IGEN OM 8 UGER";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			//alle andre gange:
@@ -285,22 +348,25 @@ int main(void)
 			if(Status_Status == 1 && Status_Reset == 0)
 			{
 				Status_Reset = 1;
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = "TRYK IGEN FOR HARD RESET";
+				char SoonSoonToBe[] = "TRYK IGEN FOR HARD RESET";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			//Nu har man trykket to gange på reset under indstillinger og den er blevet hard resat:
 			if(Status_Status == 1 && Status_Reset == 1)
 			{
 				Size_Status = 0;
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = "HARD RESET FAERDIG";
+				char SoonSoonToBe[] = "HARD RESET FAERDIG";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			else
 			{
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = "RESET FAERDIG";
+				char SoonSoonToBe[] = "RESET FAERDIG";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			//Hvis det er tid til at høste
@@ -310,8 +376,9 @@ int main(void)
 				Size_Status = 0;
 				//Sørger for, at status ikke aktiverer længere nede:
 				Status_Status = 0;
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = "HOEST FAERDIG - HOEST IGEN OM 8 UGER";
+				char SoonSoonToBe[] = "HOEST FAERDIG - HOEST IGEN OM 8 UGER";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			//i alle andre tilfælde:
@@ -346,8 +413,9 @@ int main(void)
 				//Sørger for, at den ikke kan være uden for "range"
 				range();
 				//Skriver det på displayet
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = Size_Air << " - LUFT UD AF "<<NUMBERS[1]<<NUMBERS[0];
+				char SoonSoonToBe[] = Size_Air << " - LUFT UD AF 10";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			if(Status_Humid == 2)
@@ -357,8 +425,9 @@ int main(void)
 				//Sørger for, at den ikke kan være uden for "range"
 				range();
 				//Skriver det på displayet
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = Size_Humid << " PROCENT FUGT";
+				char SoonSoonToBe[] = Size_Humid << " PROCENT FUGT";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			if(Status_Light == 2)
@@ -368,8 +437,9 @@ int main(void)
 				//Sørger for, at den ikke kan være uden for "range"
 				range();
 				//Skriver det på skærmen
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = Size_Light<< " TIMER LYS OM DAGEN";
+				char SoonSoonToBe[] = size_Light << " TIMER LYS OM DAGEN";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			Time = 0;
@@ -384,8 +454,9 @@ int main(void)
 			Status_Humid = 0;
 			Status_Light = 0;
 			Time = 0;
-			memset(SoonToBe,0x00,strlen(SoonToBe));
-			SoonToBe = "HVAD VIL DU JUSTERE";
+			char SoonSoonToBe[] = "HVAD VIL DU JUSTERE";
+			SoonToBe = SoonSoonToBe;
+			globsize = size(SoonToBe);
 			rensinput();
 		}
 		if(PINA & (1<<PINA7))==0)//PIND == 0b10000000)
@@ -398,8 +469,9 @@ int main(void)
 				//Sørger for, at den ikke kan være uden for "range"
 				range();
 				//Skriver det på displayet
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = Size_Air << " - LUFT UD AF "<<NUMBERS[1]<<NUMBERS[0];
+				char SoonSoonToBe[] = Size_Air << " - Luft ud af 10";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			if(Status_Humid == 2)
@@ -409,8 +481,9 @@ int main(void)
 				//Sørger for, at den ikke kan være uden for "range"
 				range();
 				//Skriver det på displayet
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = Size_Humid << " PROCENT FUGT";
+				char SoonSoonToBe[] = Size_Humid << " PROCENT FUGT";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			if(Status_Light == 2)
@@ -420,8 +493,9 @@ int main(void)
 				//Sørger for, at den ikke kan være uden for "range"
 				range();
 				//Skriver det på skærmen
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = Size_Light<< " TIMER LYS OM DAGEN";
+				char SoonSoonToBe[] = Size_Light << " TIMER LYS OM DAGEN";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			Time = 0;
@@ -430,8 +504,9 @@ int main(void)
 		if(Status_Status)
 		{
 			//Display status
-			memset(SoonToBe,0x00,strlen(SoonToBe));
-			SoonToBe = "HOEST OM " << 8*7-Size_Status << " DAGE";
+			char SoonSoonToBe[] = "HOEST OM " << 8*7-Size_Status << " DAGE";
+			SoonToBe = SoonSoonToBe;
+			globsize = size(SoonToBe);
 			rensinput();
 			Time = 0;
 		}
@@ -445,8 +520,9 @@ int main(void)
 				Status_Air = 2;
 				Status_Humid = 0;
 				Status_Light = 0;
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = "BRUG OP OG NED TIL AT JUSTERE LUFT";
+				char SoonSoonToBe[] = "BRUG OP OG NED TIL AT JUSTERE LUFT";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			if(Status_Humid)
@@ -454,8 +530,9 @@ int main(void)
 				Status_Humid = 2;
 				Status_Air = 0;
 				Status_Light = 0;
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = "BRUG OP OG NED TIL AT JUSTERE FUGT";
+				char SoonSoonToBe[] = "BRUG OP OG NED TIL AT JUSTERE FUGT";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			if(Status_Light)
@@ -463,8 +540,9 @@ int main(void)
 				Status_Light = 2;
 				Status_Air = 0;
 				Status_Humid = 0;
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = "BRUG OP OG NED TIL AT JUSTERE LYS";
+				char SoonSoonToBe[] = "BRUG OP OG NED TIL AT JUSTERE LYS";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			Time = 0;
@@ -474,18 +552,21 @@ int main(void)
 			//Hvad displayet skal vise efter man har trykket på knapperne:
 			if(Status_Air)
 			{
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = "LUFT - "<< Size_Air << " UD AF "<<NUMBERS[1]<<NUMBERS[0];
+				char SoonSoonToBe[] = "LUFT - " << Size_Air << " UD AF 10";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 			}
 			if(Status_Humid)
 			{
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = "FUGT - "<< Size_Humid << " PROCENT";
+				char SoonSoonToBe[] = "FUGT - " << Size_Humid << " PROCENT";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 			}
 			if(Status_Light)
 			{
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = "LYS - "<<Size_Light<< " TIMER OM DAGEN";
+				char SoonSoonToBe[] = "LYS - " << Size_Light << " TIMER OM DAGEN";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 			}
 			rensinput();
 		}
@@ -506,14 +587,17 @@ int main(void)
 		{
 			if(Status_Status == 2)
 			{
-				memset(SoonToBe,0x00,strlen(SoonToBe));
-				SoonToBe = "HOEST NU  -  TRYK PÅ STATUS ELLER RESET NAAR DETTE ER GJORT  -  HOEST NU";
+				char SoonSoonToBe[] = "HOEST NU  -  TRYK PÅ STATUS ELLER RESET NAAR DETTE ER GJORT  -  HOEST NU";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 				rensinput();
 			}
 			else
 			{
 				Status_Status = 0;
-				memset(SoonToBe,0x00,strlen(SoonToBe));
+				char SoonSoonToBe[] = "";
+				SoonToBe = SoonSoonToBe;
+				globsize = size(SoonToBe);
 			}
 			Global_Time=0;
 			Global_Time_Keeper = 0;
@@ -540,7 +624,7 @@ int main(void)
 		}
 
 		//Går igennem alle mulige bogstaver/tal til der er blankt display, og starter igen.
-		if(t > strlen(SoonToBe)+3)
+		if(t > globsize+3)
 		{
 			t = 0;
 		}
